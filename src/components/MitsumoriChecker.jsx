@@ -19,16 +19,18 @@ const commonItemsWithCategory = {
   items: (commonItems.items || []).map((i) => ensureItemCategory({ ...i, category: 'labor' }))
 };
 
-export default function MitsumoriChecker() {
+const DEFAULT_REPORT_META = { お客様名: '', 車種: '', ナンバー: '', カラーNo: '', 担当者: '' };
+
+export default function MitsumoriChecker({ reportMeta: reportMetaProp, onReportMetaChange }) {
   const [selectedAreas, setSelectedAreas] = useState([]);
   const [workTypes, setWorkTypes] = useState({});
   const [checkedItems, setCheckedItems] = useState({});
   const [expandedHelp, setExpandedHelp] = useState({});
   const [toastMessage, setToastMessage] = useState('');
   const [showConfirm, setShowConfirm] = useState(false);
-  const [reportMeta, setReportMeta] = useState({
-    お客様名: '', 車種: '', ナンバー: '', カラーNo: '', 担当者: ''
-  });
+  const [internalReportMeta, setInternalReportMeta] = useState(DEFAULT_REPORT_META);
+  const reportMeta = reportMetaProp ?? internalReportMeta;
+  const setReportMeta = onReportMetaChange ?? setInternalReportMeta;
 
   const showToast = useCallback((msg) => {
     setToastMessage(msg);
@@ -118,7 +120,7 @@ export default function MitsumoriChecker() {
     setSelectedAreas([]);
     setWorkTypes({});
     setExpandedHelp({});
-    setReportMeta({ お客様名: '', 車種: '', ナンバー: '', カラーNo: '', 担当者: '' });
+    setReportMeta(DEFAULT_REPORT_META);
     setShowConfirm(false);
     showToast('リセットしました');
   };
