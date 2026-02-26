@@ -37,16 +37,53 @@ function escapeRegex(s) {
 }
 
 /**
+ * 指定レイアウトに沿った抽出（優先）
+ * - お客様名: 「様」の左1列分
+ * - 車種: 「車 種」(空欄あり可) の右15文字程度
+ * - ナンバー: 「登録番号」の右10文字程度
+ * - カラーNo: 「カラーNo」の右8文字程度
+ * - 担当者: 「受付担当」の右8文字程度
+ */
+function extractByLayout(text) {
+  const result = { お客様名: '', 車種: '', ナンバー: '', カラーNo: '', 担当者: '' };
+  if (!text || typeof text !== 'string') return result;
+  const n = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').replace(/\s+/g, ' ');
+
+  const idxSama = n.indexOf('様');
+  if (idxSama !== -1) {
+    const before = n.slice(0, idxSama).trim();
+    const segments = before.split(/\s+/);
+    const oneColumn = segments.length > 0 ? segments[segments.length - 1] : before.slice(-50).trim();
+    if (oneColumn.length > 0 && oneColumn.length < 80) result.お客様名 = oneColumn;
+  }
+
+  const mCar = n.match(/車\s*種\s*(.{1,15})/);
+  if (mCar && mCar[1]) result.車種 = mCar[1].trim().replace(/\s+/g, ' ').slice(0, 15);
+
+  const mNum = n.match(/登録番号\s*(.{1,10})/);
+  if (mNum && mNum[1]) result.ナンバー = mNum[1].trim().replace(/\s+/g, ' ').slice(0, 10);
+
+  const mColor = n.match(/カラーNo\s*(.{1,8})/);
+  if (mColor && mColor[1]) result.カラーNo = mColor[1].trim().replace(/\s+/g, ' ').slice(0, 8);
+
+  const mTanto = n.match(/受付担当\s*(.{1,8})/);
+  if (mTanto && mTanto[1]) result.担当者 = mTanto[1].trim().replace(/\s+/g, ' ').slice(0, 8);
+
+  return result;
+}
+
+/**
  * テキストから見積メタ（お客様名・車種・ナンバー・カラー№・担当者）を抽出
- * 複数ラベル表記・改行区切り・表形式にできるだけ対応
+ * まず指定レイアウトで試し、未取得分は従来ロジックで補う
  */
 export function extractMetaFromText(text) {
-  const result = { お客様名: '', 車種: '', ナンバー: '', カラーNo: '', 担当者: '' };
+  const result = extractByLayout(text);
   if (!text || typeof text !== 'string') return result;
   const normalized = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').replace(/\s+/g, ' ');
   const lines = text.split(/\r\n|\r|\n/).map((l) => l.replace(/\s+/g, ' ').trim()).filter(Boolean);
 
   for (const [key, labels] of Object.entries(LABEL_MAP)) {
+    if (result[key]) continue;
     for (const label of labels) {
       if (!normalized.includes(label)) continue;
       const pos = normalized.indexOf(label);
