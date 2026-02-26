@@ -9,6 +9,7 @@ export default function PdfImport({ reportMeta, onApply, onSwitchToChecker }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [fileName, setFileName] = useState('');
+  const [rawTextPreview, setRawTextPreview] = useState('');
 
   const handleFileChange = useCallback(async (e) => {
     const file = e.target.files?.[0];
@@ -17,9 +18,11 @@ export default function PdfImport({ reportMeta, onApply, onSwitchToChecker }) {
       return;
     }
     setError('');
+    setRawTextPreview('');
     setLoading(true);
     try {
       const text = await extractTextFromPdf(file);
+      setRawTextPreview(text ? text.slice(0, 1500) : '');
       const extracted = extractMetaFromText(text);
       setMeta(extracted);
       setFileName(file.name);
@@ -70,6 +73,12 @@ export default function PdfImport({ reportMeta, onApply, onSwitchToChecker }) {
             </p>
           )}
           {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+          {rawTextPreview && Object.values(meta).every((v) => !v) && (
+            <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm">
+              <p className="font-medium text-amber-800 mb-2">自動で項目を認識できませんでした。下のテキストを参考に、手動で入力してください。</p>
+              <pre className="text-xs text-slate-700 whitespace-pre-wrap break-words max-h-48 overflow-y-auto bg-white p-2 rounded border border-amber-100">{rawTextPreview}</pre>
+            </div>
+          )}
         </div>
 
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
